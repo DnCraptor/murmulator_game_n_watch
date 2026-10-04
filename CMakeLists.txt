@@ -28,6 +28,13 @@ set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/boards )
 #set(PICO_BOARD murmulator CACHE STRING "Board type")
 #set(PICO_PLATFORM "rp2040" CACHE STRING "Chip type")
 
+# Olimex RP2040-PICO-PC with Raspberry Pi Pico 2: cmake -DPICO_PC=ON
+option(PICO_PC "Olimex RP2040-PICO-PC + Pico 2 (PCp2)" OFF)
+if(PICO_PC)
+    set(PICO_BOARD pico_pc CACHE STRING "Board type" FORCE)
+    set(PICO_PLATFORM "rp2350" CACHE STRING "Chip type" FORCE)
+endif()
+
 set(PICO_BOARD murmulator2 CACHE STRING "Board type")
 set(PICO_PLATFORM "rp2350" CACHE STRING "Chip type")
 
@@ -53,6 +60,8 @@ if(PICO_BOARD STREQUAL "murmulator")
     set(MURMULATOR_PREFIX "m1")
 elseif(PICO_BOARD STREQUAL "murmulator2")
     set(MURMULATOR_PREFIX "m2")
+elseif(PICO_BOARD STREQUAL "pico_pc")
+    set(MURMULATOR_PREFIX "PC")
 else()
     message(FATAL_ERROR "Unsupported PICO_BOARD for firmware naming: ${PICO_BOARD}")
 endif()
@@ -66,7 +75,11 @@ else()
 endif()
 
 set(FW_PREFIX "${MURMULATOR_PREFIX}${PLATFORM_PREFIX}")
-set(FW_NAME "${FW_PREFIX}-gnw-VGA-HDMI-TFT-${SOFT_VERSION}")
+if(PICO_PC)
+    set(FW_NAME "${FW_PREFIX}-gnw-HDMI-${SOFT_VERSION}")
+else()
+    set(FW_NAME "${FW_PREFIX}-gnw-VGA-HDMI-TFT-${SOFT_VERSION}")
+endif()
 project(${FW_NAME} VERSION ${SOFT_VERSION} LANGUAGES C CXX ASM)
 
 message("CMAKE_PROJECT_NAME = ${CMAKE_PROJECT_NAME}")
@@ -92,6 +105,10 @@ add_subdirectory(lib/sdcard)
 add_subdirectory(lib/joysticks)
 add_subdirectory(lib/sound)
 add_subdirectory(lib/video)
+if(PICO_PC)
+    # USB HID keyboard on the native USB port (TinyUSB host), no USB stdio
+    add_subdirectory(lib/usbhid)
+endif()
 
 # Main Executable
 add_executable(${PROJECT_NAME})
@@ -114,7 +131,9 @@ target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
 
 # Common options
 add_compile_options(-O2)
-add_definitions(-DPICO_STDIO_USB)
+if(NOT PICO_PC)
+    add_definitions(-DPICO_STDIO_USB)
+endif()
 #add_definitions(-DPICO_PLATFORM=rp2350)
 
 # Include directories
@@ -141,10 +160,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     hardware_timer 
     pico_rand 
     pico_stdio 
-    pico_stdio_usb
     pico_multicore
     
 )
+if(PICO_PC)
+    target_link_libraries(${PROJECT_NAME} PRIVATE usbhid)
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE pico_stdio_usb)
+endif()
 
 
 set(LINK_LIBS "fatfs sdcard joysticks sound")
