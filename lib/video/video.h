@@ -8,11 +8,21 @@
 
 #define beginVideo_PIN (VGA_BASE_PIN)
 
+#ifdef BOARD_Z0
+// Waveshare RP2350-PiZero: data lanes first (GPIO32..37), clock pair GPIO38/39,
+// non-inverted diff pairs, BGR order. PIO GPIO base 16 is set in video.c.
+#define HDMI_PIN_invert_diffpairs (0)
+#define HDMI_PIN_RGB_notBGR (0)
+
+#define beginHDMI_PIN_data (beginVideo_PIN)
+#define beginHDMI_PIN_clk (beginVideo_PIN+6)
+#else
 #define HDMI_PIN_invert_diffpairs (1)
 #define HDMI_PIN_RGB_notBGR (1)
 
 #define beginHDMI_PIN_data (beginVideo_PIN+2)
 #define beginHDMI_PIN_clk (beginVideo_PIN)
+#endif
 
 /*
 #ifndef TFT_DATA_PIN

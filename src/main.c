@@ -34,7 +34,7 @@
 #include <pico/multicore.h>
 #include <pico/bootrom.h>
 #include <pico/rand.h>
-#ifndef PICO_PC
+#ifndef BOARD_HDMI_ONLY
 #include <pico/stdio_usb.h>
 #else
 #include "usbhid.h"
@@ -314,7 +314,7 @@ uint32_t rel_data_joy=0;
 
 
 void process_input(){
-	#ifdef PICO_PC
+	#ifdef BOARD_HDMI_ONLY
 	usbhid_task();
 	#endif
 	if(i2cKbdMode){
@@ -1283,7 +1283,7 @@ void input_init(){
 		joy_connected = false;
 	}
 	
-	#ifdef PICO_PC
+	#ifdef BOARD_HDMI_ONLY
 	// no I2C keyboard on PCp2: GPIO0/1 are the PS/2 port; USB HID keyboard in addition
 	i2cKbdMode = false;
 	usbhid_init();
@@ -1297,7 +1297,7 @@ void input_init(){
 
 	if(!i2cKbdMode) {
 		//printf ("i2c Keyboard not connected\n");
-		#ifndef PICO_PC
+		#ifndef BOARD_HDMI_ONLY
 		i2c_kbd_deinit();	
 		busy_wait_ms(100);
 		#endif
@@ -1613,11 +1613,16 @@ int main(void){
 		cfg_hud_enable=DEF_CFG_HUD_MODE;
 		cfg_mobile_mode=DEF_CFG_MOBILE_MODE;
 	}
-	#ifdef PICO_PC
-	// PCp2: only HDMI and the PWM jack are wired; the battery monitor (I2C on
-	// GPIO14/15) would take HDMI pins
+	#ifdef BOARD_HDMI_ONLY
+	// PCp2 / z0p2: only HDMI is wired; the battery monitor (I2C on GPIO14/15)
+	// would take HDMI pins
 	cfg_video_out=g_out_HDMI;
+	#ifdef BOARD_Z0
+	// z0p2: sound is the PCM5102A I2S module on GPIO10..12 (no PWM jack)
+	cfg_sound_out_mode=OUT_PCM;
+	#else
 	cfg_sound_out_mode=OUT_PWM;
+	#endif
 	cfg_mobile_mode=MOBILE_MURM_OFF;
 	#endif
 
@@ -2618,7 +2623,7 @@ int main(void){
 									}
 								}							
 								if (settings_index==1){ //Sound out mode:
-									#ifndef PICO_PC // PWM only on PCp2
+									#ifndef BOARD_HDMI_ONLY // PWM only on PCp2
 									cfg_sound_out_mode+=menu_inc_dec;
 									#endif
 									if((cfg_sound_out_mode>MAX_CFG_OUT_MODE)&&(menu_inc_dec>0)){
@@ -2637,7 +2642,7 @@ int main(void){
 										cfg_volume=0;
 									}
 								}
-								#ifndef PICO_PC // HDMI only on PCp2
+								#ifndef BOARD_HDMI_ONLY // HDMI only on PCp2
 								if (settings_index==3){ //Video output:
 									cfg_video_out+=(uint8_t)menu_inc_dec;
 									if((cfg_video_out>MAX_CFG_VIDEO_MODE)&&(menu_inc_dec>0)){
@@ -2683,7 +2688,7 @@ int main(void){
 										if(test==0) break;
 									}
 								}
-								#ifndef PICO_PC // no battery monitor on PCp2
+								#ifndef BOARD_HDMI_ONLY // no battery monitor on PCp2
 								if (settings_index==5){ //Mobile Murmulator:
 									cfg_mobile_mode+=menu_inc_dec;
 									if((cfg_mobile_mode>MAX_CFG_MOBILE_MODE)&&(menu_inc_dec>0)){

@@ -1727,6 +1727,12 @@ void graphics_init(g_out g_out,fr_rate rate){
 	const int base_inx=240;
 	switch (active_out){
 		case g_out_HDMI:
+				#ifdef BOARD_Z0
+				// RP2350: PIO GPIO base is 0 or 16 only. Base 16 covers GPIO16..47, so
+				// HDMI on GPIO32..39 is reachable. Must be set before pio_add_program.
+				pio_set_gpio_base(PIO_VIDEO, 16);
+				pio_set_gpio_base(PIO_VIDEO_ADDR, 16);
+				#endif
 				offs_prg1= pio_add_program(PIO_VIDEO_ADDR, &pio_program_conv_addr_HDMI);
 				offs_prg0 = pio_add_program(PIO_VIDEO, &program_PIO_HDMI);
 				pio_set_x(PIO_VIDEO_ADDR,SM_conv,((uint32_t)conv_color>>12));
@@ -1829,8 +1835,15 @@ void graphics_init(g_out g_out,fr_rate rate){
 				gpio_set_slew_rate(beginHDMI_PIN_clk+i,GPIO_SLEW_RATE_FAST);
 			}
 
+			#if beginHDMI_PIN_clk >= 32
+			// clock pair on GPIO38/39: the 32-bit masks cannot express it
+			uint64_t hdmi_clk_mask64 = (uint64_t)3u<<beginHDMI_PIN_clk;
+			pio_sm_set_pins_with_mask64(PIO_VIDEO, SM_video, hdmi_clk_mask64, hdmi_clk_mask64);
+			pio_sm_set_pindirs_with_mask64(PIO_VIDEO, SM_video, hdmi_clk_mask64, hdmi_clk_mask64);
+			#else
 			pio_sm_set_pins_with_mask(PIO_VIDEO, SM_video, 3u<<beginHDMI_PIN_clk, 3u<<beginHDMI_PIN_clk);
 			pio_sm_set_pindirs_with_mask(PIO_VIDEO, SM_video,  3u<<beginHDMI_PIN_clk,  3u<<beginHDMI_PIN_clk);
+			#endif
 
 			//пины - диффпары  HDMI
 			for(int i=0;i<6;i++){

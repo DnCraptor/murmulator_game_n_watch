@@ -4,6 +4,7 @@
 #include "boards/pico2.h"
 
 #define PICO_PC 1
+#define BOARD_HDMI_ONLY 1
 
 // Sound: analog stereo jack, right GPIO27, left GPIO28 (AUDIO_PWM_PIN + 1).
 // No separate beeper and no I2S DAC on the board: the sound output is forced to PWM.
