@@ -1,5 +1,8 @@
 #pragma once
 
+// pico.h pulls in the board header (BOARD_Z0, VGA_BASE_PIN): it must come
+// before the board checks below, video.c includes this header first
+#include "pico.h"
 #include "inttypes.h"
 #include "stdbool.h"
 
